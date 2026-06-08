@@ -1,0 +1,65 @@
+fastapi
+uvicorn[standard]
+
+# Environment Variables
+python-dotenv
+
+# File Uploads
+python-multipart
+
+# AI / RAG
+langchain
+langchain-community
+langchain-openai
+
+# OpenAI
+openai
+tiktoken
+
+# Embeddings
+sentence-transformers
+
+# Vector Database
+qdrant-client
+
+# PDF Processing
+pypdf
+pymupdf
+pdfplumber
+
+# GitHub Repo Parsing
+gitpython
+PyGithub
+
+# Tokenization / NLP
+transformers
+
+# HTTP Requests
+httpx
+requests
+
+# Database (Optional)
+sqlalchemy
+psycopg2-binary
+
+# Utilities
+numpy
+pandas
+
+# Async Support
+aiofiles
+
+# Logging / Validation
+pydantic
+
+# CORS
+python-jose[cryptography]
+passlib[bcrypt]
+
+
+langchain-text-splitters
+
+ollama
+langchain-ollama
+langchain-huggingface
+sentence-transformers
