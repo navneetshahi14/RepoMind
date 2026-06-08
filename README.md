@@ -311,16 +311,6 @@ App will be available at `http://localhost:3000`.
 
 ---
 
-## 🛣️ Roadmap
-
-- [ ] Multi-user collaboration on chat sessions
-- [ ] WebSocket-based streaming chat
-- [ ] Notion / Confluence source connectors
-- [ ] Code-aware embeddings (tree-sitter chunks)
-- [ ] Team / org plans on Stripe
-
----
-
 ## 🤝 Contributing
 
 PRs welcome. For major changes, open an issue first to discuss what you'd like to change.
