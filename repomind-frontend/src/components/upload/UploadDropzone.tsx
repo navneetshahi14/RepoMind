@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { cn, formatBytes } from "@/lib/utils";
 import { uploadService } from "@/services/uploadService";
 import { useUIStore } from "@/store/uiStore";
+import { useProjectStore } from "@/store/projectStore";
 import { toast } from "sonner";
 import type { UploadProgress } from "@/types";
 
@@ -39,13 +40,24 @@ export function UploadDropzone({
   maxSize = 50 * 1024 * 1024,
   multiple = true,
   onUploadComplete,
-  uploadFn = uploadService.uploadPDF,
+  uploadFn,
   title = "Drop files here or click to upload",
   description = "PDF, Markdown, or TXT files up to 50MB",
 }: UploadDropzoneProps) {
   const [uploads, setUploads] = useState<UploadProgress[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const setUploading = useUIStore((state) => state.setUploading);
+  const project_id = useProjectStore((s) => s.currentproject_id);
+
+  // Default: PDF upload bound to the current project.
+  const effectiveUploadFn =
+    uploadFn ??
+    ((file: File, onProgress: (n: number) => void) => {
+      if (!project_id) {
+        return Promise.reject(new Error("No project selected"));
+      }
+      return uploadService.uploadPDF(file, project_id, onProgress);
+    });
 
   const onDrop = useCallback(
     async (acceptedFiles: File[], rejections: FileRejection[]) => {
@@ -68,7 +80,7 @@ export function UploadDropzone({
         setUploads((prev) => [newUpload, ...prev]);
 
         try {
-          const result = await uploadFn(file, (progress) => {
+          const result = await effectiveUploadFn(file, (progress) => {
             setUploads((prev) =>
               prev.map((u) =>
                 u.file === file.name && u.status === "uploading"
@@ -102,7 +114,7 @@ export function UploadDropzone({
 
       setUploading(false);
     },
-    [uploadFn, onUploadComplete, setUploading]
+    [effectiveUploadFn, onUploadComplete, setUploading]
   );
 
   const { getRootProps, getInputProps, isDragActive, isDragReject } =

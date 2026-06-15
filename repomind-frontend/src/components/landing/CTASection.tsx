@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Sparkles, Github, Twitter, Linkedin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Brain } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export function CTASection() {
   return (
@@ -62,31 +63,40 @@ export function CTASection() {
 }
 
 export function Footer() {
+  const route = useRouter();
+
+  const navigate = (link: string) => {
+    route.push(link);
+  };
+
   return (
     <footer className="border-t border-border/50 bg-background/50 backdrop-blur-sm">
       <div className="container px-4 md:px-6 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
               <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center">
                 <Brain className="h-5 w-5 text-white" />
               </div>
-              <span className="text-lg font-bold gradient-text">
-                RepoMind
-              </span>
+              <span className="text-lg font-bold gradient-text">RepoMind</span>
             </Link>
             <p className="text-sm text-muted-foreground max-w-sm mb-4">
-              AI-powered multi-source RAG platform. Chat with your documents
-              and code repositories using natural language.
+              AI-powered multi-source RAG platform. Chat with your documents and
+              code repositories using natural language.
             </p>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button
+                onClick={() => navigate("https://github.com/navneetshahi14")}
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
                 <Github className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button onClick={()=>navigate("https://x.com/Navneetshahi15")} variant="ghost" size="icon" className="h-8 w-8">
                 <Twitter className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button onClick={()=>navigate("https://www.linkedin.com/in/navneet-shahi-a8762824b/")} variant="ghost" size="icon" className="h-8 w-8">
                 <Linkedin className="h-4 w-4" />
               </Button>
             </div>
@@ -100,11 +110,11 @@ export function Footer() {
                   Features
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link href="#pricing" className="hover:text-foreground">
                   Pricing
                 </Link>
-              </li>
+              </li> */}
               <li>
                 <Link href="/dashboard" className="hover:text-foreground">
                   Dashboard
@@ -118,7 +128,7 @@ export function Footer() {
             </ul>
           </div>
 
-          <div>
+          {/* <div>
             <h4 className="text-sm font-semibold mb-3">Resources</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
@@ -168,7 +178,7 @@ export function Footer() {
                 </Link>
               </li>
             </ul>
-          </div>
+          </div> */}
         </div>
 
         <div className="border-t border-border/50 mt-12 pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">

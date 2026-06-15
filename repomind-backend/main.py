@@ -1,27 +1,47 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.upload import router as upload_router
-from app.api.chat import router as chat_router
-from app.api.github import router as github_router
-from app.api.github_chat import router as github_chat_router
-from app.api.api_discovery import router as api_discovery_router
-from app.api.architecture import router as architecture_router
-from app.api.readme import router as readme_router
-from app.api.readme import legacy_router as legacy_readme_router
-from app.database.connection import engine
-from app.database.base import Base
-from app.models.user_model import User
-from app.api.auth import (router as auth_router)
-from app.api.user import router as user_router
-from app.api.billing import router as billing_router
-# from app.models.chat_model import ChatSession
-from app.models.chat_session_model import ChatSession
-from app.models.source_models import Source
-from app.models.message_model import Message
-from app.models.subscription_model import Subscription
-from app.models.usage_model import Usage
 
-app = FastAPI()
+from app.database.base import Base
+from app.models import (  # noqa: F401  (registers ORM models with Base.metadata)
+    User,
+    Project,
+    Source,
+    FileNode,
+    Embedding,
+    Chunk,
+    ChatSession,
+    Message,
+    Citation,
+    ProcessingJob,
+)
+from app.database.connection import engine
+from app.services.qdrant_service import create_collection
+
+from app.routes.auth_route import router as auth_router
+from app.routes.project_route import router as project_router
+from app.routes.source_route import router as source_router
+from app.routes.chat_session_route import router as chat_session_router
+from app.routes.chat_route import router as chat_router
+from app.routes.message_route import router as message_router
+from app.routes.repository_route import router as repository_router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create all tables (Alembic initial migration is empty pass/pass for now).
+    Base.metadata.create_all(bind=engine)
+    # Ensure the Qdrant collection exists before any embed/upsert.
+    try:
+        create_collection()
+    except Exception:
+        # Qdrant may not be reachable in local dev; don't crash boot.
+        pass
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,22 +54,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-Base.metadata.create_all(
-    bind=engine
-)
-
-app.include_router(upload_router)
-app.include_router(chat_router)
-app.include_router(github_router)
-app.include_router(github_chat_router)
-app.include_router(api_discovery_router)
-app.include_router(architecture_router)
-app.include_router(readme_router)
-app.include_router(legacy_readme_router)
 app.include_router(auth_router)
-app.include_router(user_router)
-app.include_router(billing_router)
+app.include_router(project_router)
+app.include_router(source_router)
+app.include_router(chat_session_router)
+app.include_router(chat_router)
+app.include_router(message_router)
+app.include_router(repository_router)
+
 
 @app.get("/")
 def home():
-    return {"message":"RepoMind Backend in running"}
+    return {
+        "message": "Repo Mind Backend is running"
+    }

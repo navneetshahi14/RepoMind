@@ -1,97 +1,105 @@
-from qdrant_client import QdrantClient
-import uuid
+from typing import Iterable, Optional
 
+from qdrant_client import QdrantClient
 from qdrant_client.models import (
     VectorParams,
-    Distance,
-    PointStruct
+    PointStruct,
+    Filter,
+    FieldCondition,
+    MatchValue,
+    PointIdsList,
+    Distance
 )
 
-COLLECTION_NAME = "repomind"
-
-client = QdrantClient(
+qdrant_client = QdrantClient(
     url="http://localhost:6333"
 )
 
-
 def create_collection():
-
-    collections = client.get_collections()
-
-    names = [
-        c.name
-        for c in collections.collections
-    ]
-
-    if COLLECTION_NAME not in names:
-
-        client.create_collection(
-            collection_name=COLLECTION_NAME,
+    
+    if not qdrant_client.collection_exists(
+        "repomind"
+    ):
+        qdrant_client.create_collection(
+            collection_name="repomind",
             vectors_config=VectorParams(
-                size=384,
+                size=768,
                 distance=Distance.COSINE
             )
         )
+        
 
 
-def store_chunks(
-    embeddings,
-    chunks,
-    filename,
-    document_id
+def upsert_vector(
+    vector_id,
+    embedding,
+    payload
 ):
-
-    points = []
-
-    for embedding, chunk in zip(
-        embeddings,
-        chunks
-    ):
-
-        points.append(
+    qdrant_client.upsert(
+        collection_name="repomind",
+        points=[
             PointStruct(
-                id=str(uuid.uuid4()),
+                id=vector_id,
                 vector=embedding,
-                payload={
-                    "text": chunk,
-                    "filename": filename,
-                    "document_id":document_id
-                }
+                payload=payload
+            )
+        ]
+    )
+
+
+def upsert_vectors( points: list[PointStruct] ): 
+    qdrant_client.upsert( collection_name="repomind", points=points )
+
+def delete_vectors( source_id: list[str] ):
+    
+    qdrant_client.delete(
+        collection_name="repomind",
+        points_selector=Filter(
+            must=[
+                FieldCondition(
+                    key="source_id",
+                    match=MatchValue(
+                        value=str(source_id)
+                    )
+                )
+            ]
+        )
+    )
+
+def search_vectors(
+    embedding: list[float],
+    limit: int = 5,
+    project_id: Optional[str] = None,
+    source_ids: Optional[Iterable[str]] = None,
+):
+    must = []
+    if project_id is not None:
+        must.append(
+            FieldCondition(
+                key="project_id",
+                match=MatchValue(value=str(project_id)),
             )
         )
-
-    client.upsert(
-        collection_name=COLLECTION_NAME,
-        points=points
-    )
-    
-def store_chunks_repo(
-    chunks,
-    embeddings,
-    repo_id
-):
-    points = []
-    
-    for chunks_data, embedding in zip(
-        chunks,
-        embeddings
-    ):
-        
-        points.append(
-            PointStruct(
-                id=str(uuid.uuid4()),
-                vector=embedding,
-                payload={
-                    "text":chunks_data["chunk"],
-                    "file":chunks_data["file"],
-                    "path":chunks_data["path"],
-                    "repo_id":repo_id,
-                    "source_type":"github"
-                }
+    if source_ids is not None:
+        ids = list(source_ids)
+        if ids:
+            # Qdrant's MatchAny is the cleanest way; fall back to MatchValue
+            # per id if the client version doesn't expose it.
+            from qdrant_client.models import MatchAny
+            must.append(
+                FieldCondition(
+                    key="source_id",
+                    match=MatchAny(any=[str(s) for s in ids]),
+                )
             )
-        )
-        
-    client.upsert(
-        collection_name=COLLECTION_NAME,
-        points=points
+
+    query_filter = Filter(must=must) if must else None
+
+    results = qdrant_client.query_points(
+        collection_name="repomind",
+        query=embedding,
+        query_filter=query_filter,
+        limit=limit,
     )
+
+    return results

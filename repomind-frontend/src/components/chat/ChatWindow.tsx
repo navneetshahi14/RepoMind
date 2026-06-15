@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Send, Paperclip, Square, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useChatStore } from "@/store/chatStore";
+import { useProjectStore } from "@/store/projectStore";
 import { useUIStore } from "@/store/uiStore";
 import { useAutoScroll } from "@/hooks/useAutoScroll";
 import { MessageBubble } from "./MessageBubble";
@@ -29,25 +29,82 @@ export function ChatWindow() {
     isStreaming,
     streamingMessageId,
     activeSource,
-    startSession,
-    currentSession,
+    setSession,
+    loadHistory,
+    upsertSession,
+    currentSessionId,
   } = useChatStore();
 
+  const project_id = useProjectStore((s) => s.currentproject_id);
   const streamingEnabled = useUIStore((state) => state.streamingEnabled);
-  const showSources = useUIStore((state) => state.showSources);
   const model = useUIStore((state) => state.model);
 
   const messagesEndRef = useAutoScroll<HTMLDivElement>([messages]);
 
+  // Auto-resize the textarea as the user types.
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${Math.min(
         textareaRef.current.scrollHeight,
-        200
+        200,
       )}px`;
     }
   }, [input]);
+
+  // If we land on the chat page with a saved sessionId (persisted from
+  // a previous visit) but no in-memory messages, fetch history. This
+  // makes the chat thread survive a page refresh.
+  useEffect(() => {
+    if (!currentSessionId) return;
+    if (messages.length > 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const history = await chatService.getMessages(currentSessionId);
+        if (cancelled) return;
+        loadHistory(currentSessionId, history);
+      } catch (err) {
+        console.warn("Failed to load chat history", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // We intentionally only re-run when the session id changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSessionId]);
+
+  // Reset the local session when the project switches — the previous
+  // session belongs to the old project, so the next message would
+  // 403/404 otherwise.
+  useEffect(() => {
+    setSession(null);
+  }, [project_id, setSession]);
+
+  const ensureSession = async (): Promise<string | null> => {
+    if (currentSessionId) return currentSessionId;
+    if (!project_id) {
+      toast.error("Pick or create a project first.");
+      return null;
+    }
+    try {
+      const session = await chatService.createChatSession(project_id);
+      setSession(session.id);
+      upsertSession({
+        id: session.id,
+        project_id: session.project_id,
+        title: session.title ?? null,
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt,
+      });
+      return session.id;
+    } catch (err) {
+      console.error("Failed to create chat session", err);
+      toast.error("Couldn't start a chat session.");
+      return null;
+    }
+  };
 
   const sendMessage = async () => {
     if (!input.trim() || isStreaming) return;
@@ -55,10 +112,8 @@ export function ChatWindow() {
     const question = input.trim();
     setInput("");
 
-    let sessionId = currentSession;
-    if (!sessionId) {
-      sessionId = startSession();
-    }
+    const sessionId = await ensureSession();
+    if (!sessionId) return;
 
     const userMessageId = addMessage({
       role: "user",
@@ -97,100 +152,49 @@ export function ChatWindow() {
   const streamResponse = async (
     question: string,
     sessionId: string,
-    messageId: string
+    messageId: string,
   ) => {
     abortControllerRef.current = new AbortController();
 
-    if (!activeSource) {
-      updateMessage(messageId, {
-        content: "Please select a source first.",
-        isStreaming: false,
-      });
-      return;
-    }
+    console.log("called stream response")
 
-    const request: any = {
-      question,
-      session_id: sessionId,
-    };
+    await chatService.streamChat(
+      { sessionId, question, model },
+      {
+        onChunk: (chunk) => appendToMessage(messageId, chunk),
+        onComplete: () => updateMessage(messageId, { isStreaming: false }),
+        onError: (err) => {
+          if (err.name !== "AbortError") throw err;
+        },
+      },
+      abortControllerRef.current.signal,
+    );
 
-    if (activeSource.type === "pdf") {
-      request.document_id = activeSource.id;
-    } else {
-      request.repo_id = activeSource.id;
-      request.source_id = activeSource.id;
-      request.source_type = activeSource.type;
-    }
-
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/chat/stream`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(request),
-          signal: abortControllerRef.current.signal,
-        }
-      );
-
-      if (!response.body) throw new Error("No response body");
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        appendToMessage(messageId, chunk);
-      }
-
+    if (abortControllerRef.current?.signal.aborted) {
       updateMessage(messageId, { isStreaming: false });
-    } catch (error) {
-      if ((error as Error).name === "AbortError") {
-        updateMessage(messageId, { isStreaming: false });
-      } else {
-        throw error;
-      }
     }
   };
 
   const nonStreamResponse = async (
     question: string,
     sessionId: string,
-    messageId: string
+    messageId: string,
   ) => {
-    if (!activeSource) {
-      updateMessage(messageId, {
-        content: "Please select a source first.",
-        isStreaming: false,
-      });
-      return;
-    }
-
-    console.log(activeSource)
-    let response;
-    if (activeSource.type === "pdf") {
-      alert("pdf")
-      response = await chatService.chatWithPDF({
-        question,
-        document_id: activeSource.id,
-        session_id: sessionId,
-      });
-    } else {
-      alert("repo")
-      response = await chatService.chatWithRepo({
-        question,
-        repo_id: activeSource.id,
-        session_id: sessionId,
-        source_id: activeSource.id,
-        source_type: activeSource.type,
-      });
-    }
-
+    const response = await chatService.chat({
+      sessionId,
+      question,
+      model,
+      
+    });
     updateMessage(messageId, {
       content: response.answer,
-      sources: response.sources,
+      sources: response.sources.map((s) => ({
+        id: s.id,
+        chunkId: s.chunkId,
+        file: s.file,
+        path: s.path,
+        excerpt: s.excerpt,
+      })),
       isStreaming: false,
     });
   };
@@ -215,7 +219,7 @@ export function ChatWindow() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)]">
+    <div className="flex flex-col overflow-hidden h-[calc(100vh-3.5rem)]">
       <div
         className="flex-1 overflow-y-auto scrollbar-thin"
         ref={messagesEndRef}
@@ -254,9 +258,11 @@ export function ChatWindow() {
               placeholder={
                 activeSource
                   ? `Ask ${activeSource.name} anything...`
-                  : "Select a source to start chatting..."
+                  : project_id
+                    ? "Ask your project anything..."
+                    : "Pick or create a project to start chatting..."
               }
-              disabled={!activeSource}
+              disabled={!project_id}
               className="min-h-[52px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-4 py-3 pr-24"
               rows={1}
             />
@@ -276,7 +282,7 @@ export function ChatWindow() {
               ) : (
                 <Button
                   onClick={sendMessage}
-                  disabled={!input.trim() || !activeSource}
+                  disabled={!input.trim() || !project_id}
                   size="icon"
                   className="h-8 w-8"
                   variant="gradient"

@@ -1,9 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ChatWindow } from "@/components/chat/ChatWindow";
 import { useChatStore } from "@/store/chatStore";
 import { useSourceStore } from "@/store/sourceStore";
+import { useProjectStore } from "@/store/projectStore";
+import { uploadService } from "@/services/uploadService";
+import { githubService } from "@/services/githubService";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Github, Database, Plus, Sparkles } from "lucide-react";
@@ -17,11 +21,30 @@ export default function ChatPage() {
   const activeSource = useChatStore((state) => state.activeSource);
   const setActiveSource = useChatStore((state) => state.setActiveSource);
   const sources = useSourceStore((state) => state.sources);
+  const setSources = useSourceStore((state) => state.setSources);
   const repos = useSourceStore((state) => state.repos);
+  const setRepos = useSourceStore((state) => state.setRepos);
+  const project_id = useProjectStore((s) => s.currentproject_id);
   const [showSources, setShowSources] = useState(false);
 
+  useEffect(() => {
+    if (!project_id) return;
+    (async () => {
+      try {
+        const [pdfs, ghs] = await Promise.all([
+          uploadService.getSources(project_id).catch(() => []),
+          githubService.getRepos(project_id).catch(() => []),
+        ]);
+        setSources(pdfs);
+        setRepos(ghs);
+      } catch (err) {
+        console.error("Failed to load sources for chat", err);
+      }
+    })();
+  }, [project_id]);
+
   const allSources = [
-    ...sources.map(s => ({ ...s, type: s.type as 'pdf' | 'markdown' | 'text' })),
+    ...sources.map(s => ({ ...s, type: s.type as 'pdf' })),
     ...repos.map(r => ({
       id: r.id,
       name: r.name,

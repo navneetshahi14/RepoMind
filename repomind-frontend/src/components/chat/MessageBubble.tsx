@@ -134,7 +134,7 @@ export function MessageBubble({ message, onRegenerate }: MessageBubbleProps) {
                 Regenerate
               </Button>
             )}
-            <Button
+            {/* <Button
               variant="ghost"
               size="icon"
               className="h-7 w-7"
@@ -147,7 +147,7 @@ export function MessageBubble({ message, onRegenerate }: MessageBubbleProps) {
               className="h-7 w-7"
             >
               <ThumbsDown className="h-3 w-3" />
-            </Button>
+            </Button> */}
           </div>
         )}
       </div>

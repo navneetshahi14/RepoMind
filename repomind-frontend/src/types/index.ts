@@ -1,5 +1,39 @@
 export type SourceType = "pdf" | "github" ;
 
+/**
+ * Server-side source record (camelCase, matches backend SourceResponse).
+ */
+export interface SourceResponse {
+  id: string;
+  project_id: string;
+  type: string;
+  sourceUrl?: string | null;
+  fileName?: string | null;
+  status: string;
+  errorMessage?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  chunks: number;
+  files: number;
+}
+
+/**
+ * Project record (camelCase, matches backend ProjectResponse).
+ */
+export interface Project {
+  id: string;
+  name: string;
+  description?: string | null;
+  ownerId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectCreateRequest {
+  name: string;
+  description?: string;
+}
+
 export interface Source {
   id: string;
   type: SourceType;
@@ -23,21 +57,21 @@ export interface ChatMessage {
 
 export interface Citation {
   id: string;
+  chunkId?: string;
   file: string;
   path: string;
   page?: number;
-  score: number;
+  score?: number;
   excerpt?: string;
 }
 
 export interface ChatSession {
   id: string;
-  title: string;
-  sourceId: string;
-  sourceType: SourceType;
-  messages: ChatMessage[];
+  project_id: string;
+  userId: string;
+  title?: string | null;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export interface RepoInfo {
@@ -135,8 +169,10 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  avatarUrl?: string;
+  fullName?: string | null;
+  avatarUrl?: string | null;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface SignupRequest {

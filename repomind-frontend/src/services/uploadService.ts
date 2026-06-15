@@ -1,101 +1,77 @@
 import { api, handleAPIError } from "./api";
-import type { Source, UploadProgress } from "@/types";
+import type { Source, SourceResponse, UploadProgress } from "@/types";
 
 export interface UploadPDFResponse {
-  document_id: string;
-  filename: string;
-  chunks: number;
-  success: boolean;
-  message?: string;
+  sourceId: string;
+  fileName: string;
+  status: string;
 }
 
-export interface UploadFileResponse {
-  id: string;
-  name: string;
-  chunks: number;
-  type: string;
+/**
+ * Convert a backend SourceResponse to the lightweight Source shape the UI
+ * components consume (lowercase `type`, derived `name`, `chunks` not yet known).
+ */
+function toUiSource(resp: SourceResponse): Source {
+  const isGithub = (resp.type || "").toUpperCase() === "GITHUB";
+  return {
+    id: resp.id,
+    type: isGithub ? "github" : "pdf",
+    name: resp.fileName || resp.sourceUrl || "Untitled",
+    chunks: 0,
+    createdAt: resp.createdAt,
+    url: resp.sourceUrl ?? undefined,
+  };
 }
 
 export const uploadService = {
   async uploadPDF(
     file: File,
+    project_id: string,
     onProgress?: (progress: number) => void
   ): Promise<UploadPDFResponse> {
     try {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await api.post<UploadPDFResponse>("/upload/pdf", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        onUploadProgress: (progressEvent) => {
-          if (onProgress && progressEvent.total) {
-            const progress = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
-            onProgress(progress);
-          }
-        },
-      });
-      return response.data;
+      const response = await api.post<{
+        source_id: string;
+        file_name: string;
+        status: string;
+      }>(
+        `/sources/upload/pdf?project_id=${encodeURIComponent(project_id)}`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          onUploadProgress: (progressEvent) => {
+            if (onProgress && progressEvent.total) {
+              const progress = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              onProgress(progress);
+            }
+          },
+        }
+      );
+
+      return {
+        sourceId: response.data.source_id,
+        fileName: response.data.file_name,
+        status: response.data.status,
+      };
     } catch (error) {
       throw handleAPIError(error);
     }
   },
 
-  async uploadMarkdown(file: File, onProgress?: (progress: number) => void) {
+  /** Project-scoped source listing. */
+  async getSources(project_id: string): Promise<Source[]> {
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await api.post("/upload/markdown", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        onUploadProgress: (progressEvent) => {
-          if (onProgress && progressEvent.total) {
-            const progress = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
-            onProgress(progress);
-          }
-        },
-      });
-      return response.data;
-    } catch (error) {
-      throw handleAPIError(error);
-    }
-  },
-
-  async uploadText(file: File, onProgress?: (progress: number) => void) {
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await api.post("/upload/text", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        onUploadProgress: (progressEvent) => {
-          if (onProgress && progressEvent.total) {
-            const progress = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
-            onProgress(progress);
-          }
-        },
-      });
-      return response.data;
-    } catch (error) {
-      throw handleAPIError(error);
-    }
-  },
-
-  async getSources(): Promise<Source[]> {
-    try {
-      const response = await api.get<Source[]>("/sources");
-      return response.data;
-    } catch (error) {
-      throw handleAPIError(error);
-    }
-  },
-
-  async deleteSource(id: string): Promise<void> {
-    try {
-      await api.delete(`/sources/${id}`);
+      const response = await api.get<SourceResponse[]>(
+        `/sources/project/${encodeURIComponent(project_id)}`
+      );
+      return response.data
+        .filter((s) => (s.type || "").toUpperCase() === "PDF")
+        .map(toUiSource);
     } catch (error) {
       throw handleAPIError(error);
     }
@@ -107,5 +83,14 @@ export const uploadService = {
       progress: 0,
       status: "pending",
     };
+  },
+
+  /** Delete a single PDF Source. */
+  async deleteSource(sourceId: string): Promise<void> {
+    try {
+      await api.delete(`/sources/${encodeURIComponent(sourceId)}`);
+    } catch (error) {
+      throw handleAPIError(error);
+    }
   },
 };

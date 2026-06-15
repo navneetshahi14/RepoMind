@@ -13,6 +13,7 @@ import { Github as GithubIcon, GitBranch, Loader2, Lock } from "lucide-react";
 import { githubService } from "@/services/githubService";
 import { uploadService } from "@/services/uploadService";
 import { useSourceStore } from "@/store/sourceStore";
+import { useProjectStore } from "@/store/projectStore";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -21,6 +22,7 @@ export default function UploadPage() {
   const [cloning, setCloning] = useState(false);
   const addRepo = useSourceStore((state) => state.addRepo);
   const addSource = useSourceStore((state) => state.addSource);
+  const project_id = useProjectStore((s) => s.currentproject_id);
   const router = useRouter();
 
   const handleRepoClone = async () => {
@@ -28,17 +30,21 @@ export default function UploadPage() {
       toast.error("Please enter a GitHub URL");
       return;
     }
+    if (!project_id) {
+      toast.error("No project selected");
+      return;
+    }
 
     setCloning(true);
     try {
-      const result = await githubService.uploadRepo(repoUrl);
+      const result = await githubService.uploadRepo(repoUrl, project_id);
       addRepo({
-        id: result.repo_id,
+        id: result.sourceId,
         name: repoUrl.split("/").pop()?.replace(".git", "") || "Repository",
         url: repoUrl,
-        files: result.files,
-        chunks: result.chunks,
-        status: "ready",
+        files: 0,
+        chunks: 0,
+        status: "processing",
         createdAt: new Date().toISOString(),
       });
       toast.success("Repository indexed successfully!");
@@ -52,13 +58,17 @@ export default function UploadPage() {
   };
 
   const handleFileUpload = async (file: File) => {
+    if (!project_id) {
+      toast.error("No project selected");
+      throw new Error("No project selected");
+    }
     try {
-      const result = await uploadService.uploadPDF(file);
+      const result = await uploadService.uploadPDF(file, project_id);
       addSource({
-        id: result.document_id,
-        name: result.filename,
+        id: result.sourceId,
+        name: result.fileName,
         type: "pdf",
-        chunks: result.chunks,
+        chunks: 0,
         createdAt: new Date().toISOString(),
       });
       toast.success(`${file.name} uploaded!`);
@@ -86,8 +96,6 @@ export default function UploadPage() {
         <Tabs defaultValue="pdf" className="">
           <TabsList className="grid grid-cols-2">
             <TabsTrigger value="pdf">PDF</TabsTrigger>
-            {/* <TabsTrigger value="markdown">MD</TabsTrigger>
-            <TabsTrigger value="text">TXT</TabsTrigger> */}
             <TabsTrigger value="github">GitHub</TabsTrigger>
           </TabsList>
 
@@ -105,46 +113,6 @@ export default function UploadPage() {
                   uploadFn={handleFileUpload}
                   title="Drop your PDF here"
                   description="PDF files up to 50MB"
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="markdown" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <FileType className="h-4 w-4 text-blue-500" />
-                  Upload Markdown File
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <UploadDropzone
-                  accept={{
-                    "text/markdown": [".md", ".markdown"],
-                  }}
-                  uploadFn={uploadService.uploadMarkdown}
-                  title="Drop your markdown file"
-                  description=".md or .markdown files"
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="text" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <FileCode className="h-4 w-4 text-emerald-500" />
-                  Upload Text File
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <UploadDropzone
-                  accept={{ "text/plain": [".txt"] }}
-                  uploadFn={uploadService.uploadText}
-                  title="Drop your text file"
-                  description=".txt files up to 50MB"
                 />
               </CardContent>
             </Card>
@@ -169,7 +137,7 @@ export default function UploadPage() {
                   />
                   <Button
                     onClick={handleRepoClone}
-                    disabled={cloning || !repoUrl.trim()}
+                    disabled={cloning || !repoUrl.trim() || !project_id}
                     variant="gradient"
                   >
                     {cloning ? (

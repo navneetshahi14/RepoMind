@@ -13,18 +13,22 @@ import {
   ArrowUpRight,
   Database,
   Zap,
+  FolderPlus,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { formatRelativeTime, truncateText } from "@/lib/utils";
 import { useSourceStore } from "@/store/sourceStore";
 import { useChatStore } from "@/store/chatStore";
-import { useEffect } from "react";
+import { useProjectStore } from "@/store/projectStore";
+import { useEffect, useState } from "react";
 import { uploadService } from "@/services/uploadService";
 import { githubService } from "@/services/githubService";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
   const sources = useSourceStore((state) => state.sources);
@@ -34,20 +38,39 @@ export default function DashboardPage() {
   const setActiveSource = useChatStore((state) => state.setActiveSource);
   const messages = useChatStore((state) => state.messages);
 
+  const project_id = useProjectStore((s) => s.currentproject_id);
+  const projects = useProjectStore((s) => s.projects);
+  const createProject = useProjectStore((s) => s.createProject);
+
+  const [newProjectName, setNewProjectName] = useState("");
+
   useEffect(() => {
-    loadData();
-  }, []);
+    if (project_id) loadData();
+  }, [project_id]);
 
   const loadData = async () => {
+    if (!project_id) return;
     try {
       const [sourcesData, reposData] = await Promise.all([
-        uploadService.getSources().catch(() => []),
-        githubService.getRepos().catch(() => []),
+        uploadService.getSources(project_id).catch(() => []),
+        githubService.getRepos(project_id).catch(() => []),
       ]);
       setSources(sourcesData);
       setRepos(reposData);
     } catch (error) {
       console.error("Failed to load dashboard data", error);
+    }
+  };
+
+  const handleCreateProject = async () => {
+    const name = newProjectName.trim();
+    if (!name) return;
+    try {
+      await createProject(name);
+      setNewProjectName("");
+      toast.success("Project created");
+    } catch (err) {
+      toast.error("Failed to create project");
     }
   };
 
@@ -98,6 +121,41 @@ export default function DashboardPage() {
     },
   ];
 
+  // Empty state when no project context yet.
+  if (!project_id) {
+    return (
+      <AppLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+              Welcome! 👋
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Let's set up your first project.
+            </p>
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Create a project</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col sm:flex-row gap-2">
+              <Input
+                placeholder="My Project"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleCreateProject()}
+              />
+              <Button onClick={handleCreateProject} variant="gradient">
+                <FolderPlus className="h-4 w-4" />
+                Create project
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="space-y-8">
@@ -111,7 +169,10 @@ export default function DashboardPage() {
               Welcome back! 👋
             </h1>
             <p className="text-muted-foreground mt-1">
-              Here's what's happening with your knowledge sources.
+              Project:{" "}
+              <span className="font-medium text-foreground">
+                {projects.find((p) => p.id === project_id)?.name ?? "..."}
+              </span>
             </p>
           </div>
           <Button variant="gradient" asChild>
@@ -128,7 +189,6 @@ export default function DashboardPage() {
             value={stats.totalSources}
             icon={Database}
             description="Active knowledge bases"
-            trend={{ value: 12, isPositive: true }}
             delay={0}
           />
           <StatsCard
@@ -136,7 +196,6 @@ export default function DashboardPage() {
             value={stats.totalRepos}
             icon={Github}
             description="Connected repos"
-            trend={{ value: 8, isPositive: true }}
             delay={0.05}
           />
           <StatsCard
@@ -144,7 +203,6 @@ export default function DashboardPage() {
             value={stats.totalMessages}
             icon={MessageSquare}
             description="Total conversations"
-            trend={{ value: 24, isPositive: true }}
             delay={0.1}
           />
           <StatsCard
@@ -152,7 +210,6 @@ export default function DashboardPage() {
             value={stats.totalChunks}
             icon={Zap}
             description="Indexed for search"
-            trend={{ value: 18, isPositive: true }}
             delay={0.15}
           />
         </div>

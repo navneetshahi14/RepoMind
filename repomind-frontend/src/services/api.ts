@@ -6,6 +6,7 @@ export const api: AxiosInstance = axios.create({
   timeout: 60000,
   headers: {
     "Content-Type": "application/json",
+    Authorization: `Bearer ${localStorage.getItem("repomind_token")}`
   },
 });
 
@@ -28,7 +29,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("repomind_token");
-        window.location.href = "/";
+        window.location.href = "/signin";
       }
     }
     return Promise.reject(error);

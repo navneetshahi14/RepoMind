@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Bell, Search, Menu, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,17 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 export function AppHeader() {
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [user,setUser] = useState("user")
+
+  useEffect(()=>{
+    const u = JSON.parse(localStorage.getItem("repomind-auth") as string)
+    let username = u?.state?.user?.name.split(" ")
+
+    if(username.length > 1)
+      setUser(`${username[0][0]}${username[username.length-1][0]}`)
+    else
+      setUser(username[0][0])
+  },[])
 
   return (
     <header className="sticky top-0 z-30 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
@@ -32,7 +43,7 @@ export function AppHeader() {
           <Menu className="h-4 w-4" />
         </Button>
 
-        <div className="flex-1 max-w-md hidden sm:block">
+        {/* <div className="flex-1 max-w-md hidden sm:block">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -44,7 +55,7 @@ export function AppHeader() {
               <span className="text-xs">⌘</span>K
             </kbd>
           </div>
-        </div>
+        </div> */}
 
         <Button
           variant="ghost"
@@ -60,10 +71,10 @@ export function AppHeader() {
         <div className="flex items-center gap-2  justify-center  ">
           <ThemeToggle />
 
-          <Button variant="ghost" size="icon" className="relative">
+          {/* <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-4 w-4" />
             <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-brand-500" />
-          </Button>
+          </Button> */}
 
 
           <DropdownMenu>
@@ -75,7 +86,7 @@ export function AppHeader() {
               >
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-gradient-to-br from-brand-400 to-brand-700 text-white text-xs">
-                    RM
+                    {user}
                   </AvatarFallback>
                 </Avatar>
               </Button>

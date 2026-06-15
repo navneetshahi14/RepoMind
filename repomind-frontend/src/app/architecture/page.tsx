@@ -1,13 +1,11 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Network,
   Sparkles,
   RefreshCw,
-  Layers,
   Database,
   Server,
   Cloud,
@@ -16,50 +14,34 @@ import {
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { MermaidViewer } from "@/components/markdown/MermaidViewer";
 import { MarkdownRenderer } from "@/components/chat/MarkdownRenderer";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { LoadingState } from "@/components/dashboard/LoadingState";
 import { architectureService } from "@/services/architectureService";
-import { useSourceStore } from "@/store/sourceStore";
+import { useProjectStore } from "@/store/projectStore";
 import { toast } from "sonner";
 import type { ArchitectureAnalysis } from "@/types";
 
-const iconMap = {
-  module: Box,
-  service: Server,
-  database: Database,
-  external: Cloud,
-};
-
 function ArchitectureContent() {
-  const searchParams = useSearchParams();
-  const repoId = searchParams.get("repoId");
-  const repos = useSourceStore((state) => state.repos);
-  const [selectedRepoId, setSelectedRepoId] = useState<string | null>(repoId);
+  // The old URL was /architecture?repoId=<id>. The new backend
+  // expects a project_id; we prefer the active project from the store.
+  const project_id = useProjectStore((s) => s.currentproject_id);
   const [analysis, setAnalysis] = useState<ArchitectureAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (repoId) setSelectedRepoId(repoId);
-  }, [repoId]);
-
-  const handleAnalyze = async () => {
-    if (!selectedRepoId) {
-      toast.error("Please select a repository");
-      return;
+    if (project_id) {
+      void runAnalysis(project_id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project_id]);
+
+  const runAnalysis = async (id: string) => {
     setLoading(true);
     try {
-      const result = await architectureService.analyzeArchitecture(selectedRepoId);
+      const result = await architectureService.analyzeArchitecture(id);
       setAnalysis(result);
       toast.success("Architecture analyzed!");
     } catch (error) {
@@ -67,6 +49,14 @@ function ArchitectureContent() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAnalyze = async () => {
+    if (!project_id) {
+      toast.error("Please select a project first");
+      return;
+    }
+    await runAnalysis(project_id);
   };
 
   return (
@@ -81,47 +71,30 @@ function ArchitectureContent() {
               Visualize and understand system architecture.
             </p>
           </div>
-          {repos.length > 0 && (
-            <div className="flex gap-2">
-              <Select
-                value={selectedRepoId || ""}
-                onValueChange={setSelectedRepoId}
-              >
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Select repo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {repos.map((repo) => (
-                    <SelectItem key={repo.id} value={repo.id}>
-                      {repo.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                onClick={handleAnalyze}
-                disabled={loading || !selectedRepoId}
-                variant="gradient"
-              >
-                {loading ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                Analyze
-              </Button>
-            </div>
-          )}
+          {project_id ? (
+            <Button
+              onClick={handleAnalyze}
+              disabled={loading}
+              variant="gradient"
+            >
+              {loading ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              {analysis ? "Re-analyze" : "Analyze"}
+            </Button>
+          ) : null}
         </div>
 
-        {repos.length === 0 ? (
+        {!project_id ? (
           <EmptyState
             icon={Network}
-            title="No repositories to analyze"
-            description="Connect a GitHub repository to analyze its architecture."
-            action={{ label: "Add Repository", href: "/github" }}
+            title="No project selected"
+            description="Pick or create a project from the sidebar to analyze its architecture."
+            action={{ label: "Open dashboard", href: "/dashboard" }}
           />
-        ) : loading ? (
+        ) : loading && !analysis ? (
           <LoadingState
             title="Analyzing architecture..."
             description="Generating diagram and explanations"
@@ -169,14 +142,16 @@ function ArchitectureContent() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Architecture Diagram</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <MermaidViewer chart={analysis.diagram} />
-                </CardContent>
-              </Card>
+              {analysis.diagram ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Architecture Diagram</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <MermaidViewer chart={analysis.diagram} />
+                  </CardContent>
+                </Card>
+              ) : null}
             </div>
 
             <Card>
@@ -192,7 +167,7 @@ function ArchitectureContent() {
           <EmptyState
             icon={Network}
             title="Ready to analyze"
-            description="Select a repository and click 'Analyze' to generate an architecture diagram."
+            description="Click 'Analyze' to generate an architecture overview for the active project."
             action={{
               label: "Analyze Now",
               onClick: handleAnalyze,

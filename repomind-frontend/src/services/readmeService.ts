@@ -1,26 +1,47 @@
 import { api, handleAPIError } from "./api";
 import type { GeneratedReadme, ReadmeConfig } from "@/types";
 
+/**
+ * Server's response wraps the markdown in `{content}`. We keep an
+ * optional `readme` field for back-compat just in case the
+ * field name ever changes.
+ */
 interface BackendReadmeResponse {
-  readme?: string;
   content?: string;
+  readme?: string;
 }
 
 export const readmeService = {
+  /**
+   * Generate a README for the given project using the provided
+   * config. The backend's readme service folds the config flags
+   * (sections, tone) into the prompt before calling the LLM.
+   */
   async generateReadme(
-    repoId: string,
+    project_id: string,
     config: Partial<ReadmeConfig>
   ): Promise<GeneratedReadme> {
     try {
+      // Send the config in the exact snake_case shape the Pydantic
+      // schema expects (we'd previously been forwarding it verbatim
+      // along with the wrong key names).
+      const payload: Record<string, unknown> = {
+        project_name: config.projectName ?? "",
+        description: config.description ?? "",
+        include_installation: config.includeInstallation ?? true,
+        include_usage: config.includeUsage ?? true,
+        include_api: config.includeAPI ?? true,
+        include_architecture: config.includeArchitecture ?? false,
+        include_contributing: config.includeContributing ?? true,
+        tone: config.tone ?? "professional",
+      };
+
       const response = await api.post<BackendReadmeResponse>(
-        "/github/readme",
-        {
-          repo_id: repoId,
-          ...config,
-        }
+        `/repo/${encodeURIComponent(project_id)}/generate-readme`,
+        payload
       );
 
-      const content = response.data.readme || response.data.content || "";
+      const content = response.data.content || response.data.readme || "";
 
       return {
         content,

@@ -8,12 +8,32 @@ import type {
 
 export const AUTH_TOKEN_KEY = "repomind_token";
 
+/**
+ * Backend response from /auth/register and /auth/login only contains
+ * { access_token, token_type } — no user payload. The frontend expects
+ * { accessToken, user }, so after a successful login/register we always
+ * follow up with /auth/me to populate the user.
+ */
+async function fetchUserAndAssemble(
+  raw: { access_token: string; token_type: string }
+): Promise<AuthResponse> {
+  authService.setToken(raw.access_token);
+  const user = await authService.getCurrentUser();
+  return {
+    accessToken: raw.access_token,
+    tokenType: raw.token_type,
+    user,
+  };
+}
+
 export const authService = {
   async signup(data: SignupRequest): Promise<AuthResponse> {
     try {
-      const response = await api.post<AuthResponse>("/auth/signup", data);
-      this.setToken(response.data.accessToken);
-      return response.data;
+      const response = await api.post<{
+        access_token: string;
+        token_type: string;
+      }>("/auth/register", data);
+      return await fetchUserAndAssemble(response.data);
     } catch (error) {
       throw handleAPIError(error);
     }
@@ -21,9 +41,11 @@ export const authService = {
 
   async login(data: LoginRequest): Promise<AuthResponse> {
     try {
-      const response = await api.post<AuthResponse>("/auth/login", data);
-      this.setToken(response.data.accessToken);
-      return response.data;
+      const response = await api.post<{
+        access_token: string;
+        token_type: string;
+      }>("/auth/login", data);
+      return await fetchUserAndAssemble(response.data);
     } catch (error) {
       throw handleAPIError(error);
     }
@@ -38,15 +60,10 @@ export const authService = {
     }
   },
 
+  // No backend /auth/logout route — JWT is stateless; clearing the local
+  // token is sufficient.
   async logout(): Promise<void> {
-    try {
-      await api.post("/auth/logout");
-    } catch (error) {
-      // Even if the server call fails, we still clear the local token.
-      console.error("Logout request failed:", error);
-    } finally {
-      this.clearToken();
-    }
+    authService.clearToken();
   },
 
   setToken(token: string): void {

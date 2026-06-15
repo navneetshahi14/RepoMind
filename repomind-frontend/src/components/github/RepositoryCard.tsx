@@ -34,9 +34,9 @@ export function RepositoryCard({ repo }: { repo: RepoInfo }) {
     try {
       await githubService.deleteRepo(repo.id);
       removeRepo(repo.id);
-      toast.success("Repository removed");
+      toast.success("Repository deleted");
     } catch (error) {
-      toast.error("Failed to remove repository");
+      toast.error("Failed to delete repository");
     }
   };
 
@@ -51,6 +51,7 @@ export function RepositoryCard({ repo }: { repo: RepoInfo }) {
 
   return (
     <motion.div
+      key={repo.id}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -2 }}
@@ -123,7 +124,7 @@ export function RepositoryCard({ repo }: { repo: RepoInfo }) {
               <MessageSquare className="h-3 w-3 mr-1" />
               Chat
             </Button>
-            <Link href={`/readme?repoId=${repo.id}`}>
+            {/* <Link href="/readme">
               <Button
                 size="sm"
                 variant="outline"
@@ -132,7 +133,7 @@ export function RepositoryCard({ repo }: { repo: RepoInfo }) {
                 README
               </Button>
             </Link>
-            <Link href={`/architecture?repoId=${repo.id}`}>
+            <Link href="/architecture">
               <Button
                 size="sm"
                 variant="outline"
@@ -140,7 +141,7 @@ export function RepositoryCard({ repo }: { repo: RepoInfo }) {
               >
                 Arch
               </Button>
-            </Link>
+            </Link> */}
             <Button
               size="icon"
               variant="ghost"

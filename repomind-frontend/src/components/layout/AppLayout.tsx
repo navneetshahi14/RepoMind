@@ -4,10 +4,14 @@ import { ReactNode } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
 import { useUIStore } from "@/store/uiStore";
+import { useProjectContext } from "@/hooks/useProjectContext";
 import { cn } from "@/lib/utils";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const sidebarOpen = useUIStore((state) => state.sidebarOpen);
+
+  // Make sure there's always a selected project on authenticated pages.
+  useProjectContext();
 
   return (
     <div className="min-h-screen bg-background">

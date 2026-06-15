@@ -1,25 +1,40 @@
-from app.database.base import Base
-from sqlalchemy import *
+from app.models.base import Base, UUIDMixin,TimestampMixin, UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import ForeignKey, String, Text, Integer
 
-class Message(Base):
-    __tablename__ = "messages   "
+class Message(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "messages"
 
-    id = Column(
+    session_id: Mapped[UUID] = mapped_column(
+        ForeignKey("chat_sessions.id")
+    )
+
+    role: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False
+    )
+
+    content: Mapped[str] = mapped_column(
+        Text,
+        nullable=False
+    )
+
+    model: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True
+    )
+
+    input_tokens: Mapped[int | None] = mapped_column(
         Integer,
-        primary_key=True
+        nullable=True
     )
 
-    session_id = Column(
+    output_tokens: Mapped[int | None] = mapped_column(
         Integer,
-        ForeignKey(
-            "chat_sessions.id"
-        )
+        nullable=True
     )
 
-    role = Column(
-        String
-    )
-
-    content = Column(
-        Text
+    session = relationship(
+        "ChatSession",
+        back_populates="messages"
     )

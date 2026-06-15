@@ -32,46 +32,46 @@ const features = [
     color: "from-purple-500 to-pink-500",
     bg: "from-purple-500/10 to-pink-500/10",
   },
-  {
-    icon: FileType,
-    title: "Markdown Support",
-    description:
-      "Upload markdown documentation, READMEs, and notes. Perfect for technical documentation and knowledge bases.",
-    color: "from-blue-500 to-cyan-500",
-    bg: "from-blue-500/10 to-cyan-500/10",
-  },
-  {
-    icon: FileCode,
-    title: "Text File Analysis",
-    description:
-      "Drop in any text file - logs, code snippets, configuration files. Get instant insights and analysis.",
-    color: "from-emerald-500 to-teal-500",
-    bg: "from-emerald-500/10 to-teal-500/10",
-  },
-  {
-    icon: FileSearch,
-    title: "README Generator",
-    description:
-      "Automatically generate comprehensive, well-structured README files for any GitHub repository using AI.",
-    color: "from-amber-500 to-orange-500",
-    bg: "from-amber-500/10 to-orange-500/10",
-  },
-  {
-    icon: Network,
-    title: "Architecture Analyzer",
-    description:
-      "Visualize system architecture with auto-generated Mermaid diagrams. Understand dependencies at a glance.",
-    color: "from-indigo-500 to-violet-500",
-    bg: "from-indigo-500/10 to-violet-500/10",
-  },
-  {
-    icon: Code2,
-    title: "API Discovery",
-    description:
-      "Automatically discover and document all API endpoints in a codebase. Search, filter, and explore routes.",
-    color: "from-pink-500 to-rose-500",
-    bg: "from-pink-500/10 to-rose-500/10",
-  },
+  // {
+  //   icon: FileType,
+  //   title: "Markdown Support",
+  //   description:
+  //     "Upload markdown documentation, READMEs, and notes. Perfect for technical documentation and knowledge bases.",
+  //   color: "from-blue-500 to-cyan-500",
+  //   bg: "from-blue-500/10 to-cyan-500/10",
+  // },
+  // {
+  //   icon: FileCode,
+  //   title: "Text File Analysis",
+  //   description:
+  //     "Drop in any text file - logs, code snippets, configuration files. Get instant insights and analysis.",
+  //   color: "from-emerald-500 to-teal-500",
+  //   bg: "from-emerald-500/10 to-teal-500/10",
+  // },
+  // {
+  //   icon: FileSearch,
+  //   title: "README Generator",
+  //   description:
+  //     "Automatically generate comprehensive, well-structured README files for any GitHub repository using AI.",
+  //   color: "from-amber-500 to-orange-500",
+  //   bg: "from-amber-500/10 to-orange-500/10",
+  // },
+  // {
+  //   icon: Network,
+  //   title: "Architecture Analyzer",
+  //   description:
+  //     "Visualize system architecture with auto-generated Mermaid diagrams. Understand dependencies at a glance.",
+  //   color: "from-indigo-500 to-violet-500",
+  //   bg: "from-indigo-500/10 to-violet-500/10",
+  // },
+  // {
+  //   icon: Code2,
+  //   title: "API Discovery",
+  //   description:
+  //     "Automatically discover and document all API endpoints in a codebase. Search, filter, and explore routes.",
+  //   color: "from-pink-500 to-rose-500",
+  //   bg: "from-pink-500/10 to-rose-500/10",
+  // },
   {
     icon: MessageSquare,
     title: "Source Citations",
@@ -107,7 +107,7 @@ export function FeaturesSection() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 justify-center items-center">
           {features.map((feature, idx) => {
             const Icon = feature.icon;
             return (

@@ -15,26 +15,55 @@ import {
   BarChart3,
   Settings,
   Sparkles,
+  Folder,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/uiStore";
+import { useProjectStore } from "@/store/projectStore";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/hooks/ThemeToggle";
+import { useState } from "react";
+import { toast } from "sonner";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: Home },
   { label: "Upload", href: "/upload", icon: Upload, badge: "New" },
   { label: "Chat", href: "/chat", icon: MessageSquare },
   { label: "GitHub", href: "/github", icon: Github },
-  { label: "README", href: "/readme", icon: FileText },
-  { label: "Architecture", href: "/architecture", icon: Network },
-  { label: "API Discovery", href: "/api-discovery", icon: Code2 },
+  // { label: "README", href: "/readme", icon: FileText },
+  // { label: "Architecture", href: "/architecture", icon: Network },
+  // { label: "API Discovery", href: "/api-discovery", icon: Code2 },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
   const sidebarOpen = useUIStore((state) => state.sidebarOpen);
+  const projects = useProjectStore((s) => s.projects);
+  const currentproject_id = useProjectStore((s) => s.currentproject_id);
+  const selectProject = useProjectStore((s) => s.selectProject);
+  const createProject = useProjectStore((s) => s.createProject);
+  const [newName, setNewName] = useState("");
+
+  const handleCreate = async () => {
+    const name = newName.trim();
+    if (!name) return;
+    try {
+      await createProject(name);
+      setNewName("");
+      toast.success("Project created");
+    } catch {
+      toast.error("Failed to create project");
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -46,7 +75,7 @@ export function AppSidebar() {
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
           className={cn(
             "hidden md:flex flex-col fixed left-0 top-0 bottom-0 z-40 w-64",
-            "border-r border-border/50 bg-background/80 backdrop-blur-xl"
+            "border-r border-border/50 bg-background/80 backdrop-blur-xl",
           )}
         >
           <div className="flex items-center gap-2 px-6 py-5 border-b border-border/50">
@@ -66,6 +95,52 @@ export function AppSidebar() {
             </Link>
           </div>
 
+          {/* Project selector */}
+          <div className="px-3 py-3 border-b border-border/50 space-y-2">
+            <div className="flex items-center gap-2 px-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+              <Folder className="h-3 w-3" />
+              <span>Project</span>
+            </div>
+            <Select
+              value={currentproject_id ?? ""}
+              onValueChange={(v) => selectProject(v)}
+            >
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="Select a project" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleCreate();
+              }}
+              className="flex items-center gap-1"
+            >
+              <input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="New project"
+                className="flex-1 h-8 px-2 text-xs rounded-md border border-border bg-background"
+              />
+              <Button
+                type="submit"
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8"
+                aria-label="Create project"
+              >
+                <Plus className="h-3 w-3" />
+              </Button>
+            </form>
+          </div>
+
           <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1 scrollbar-thin">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -80,13 +155,18 @@ export function AppSidebar() {
                     "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                     isActive
                       ? "bg-gradient-to-r from-brand-500/15 to-brand-700/5 text-foreground"
-                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
                   )}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="active-nav"
-                      className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-0.5 rounded-r-full bg-gradient-to-b from-brand-400 to-brand-600"
+                      transition={{
+                        type: "spring",
+                        stiffness: 350,
+                        damping: 30,
+                      }}
+                      className="absolute left-0 h-5 w-1 rounded-full bg-gradient-to-b from-brand-400 to-brand-600"
                     />
                   )}
                   <Icon
@@ -94,7 +174,7 @@ export function AppSidebar() {
                       "h-4 w-4 transition-colors",
                       isActive
                         ? "text-brand-500"
-                        : "text-muted-foreground group-hover:text-foreground"
+                        : "text-muted-foreground group-hover:text-foreground",
                     )}
                   />
                   <span className="flex-1">{item.label}</span>
@@ -109,13 +189,13 @@ export function AppSidebar() {
           </nav>
 
           <div className="border-t border-border/50 p-3 space-y-2">
-            <Link
+            {/* <Link
               href="/pricing"
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-all group"
             >
               <Sparkles className="h-4 w-4 text-amber-500 group-hover:scale-110 transition-transform" />
               <span>Upgrade to Pro</span>
-            </Link>
+            </Link> */}
             <div className="flex items-center justify-between px-3 py-2">
               <span className="text-xs text-muted-foreground">Theme</span>
               <ThemeToggle />

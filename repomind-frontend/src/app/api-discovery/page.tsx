@@ -1,47 +1,35 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Code2, Sparkles, RefreshCw } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { APIList } from "@/components/github/APIList";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { LoadingState } from "@/components/dashboard/LoadingState";
 import { apiDiscoveryService } from "@/services/apiDiscoveryService";
-import { useSourceStore } from "@/store/sourceStore";
+import { useProjectStore } from "@/store/projectStore";
 import { toast } from "sonner";
 import type { APIEndpoint } from "@/types";
 
-function APIDiscoveryContent() {
-  const searchParams = useSearchParams();
-  const repoId = searchParams.get("repoId");
-  const repos = useSourceStore((state) => state.repos);
-  const [selectedRepoId, setSelectedRepoId] = useState<string | null>(repoId);
+export default function APIDiscoveryPage() {
+  const project_id = useProjectStore((s) => s.currentproject_id);
   const [apis, setApis] = useState<APIEndpoint[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (repoId) setSelectedRepoId(repoId);
-  }, [repoId]);
-
-  const handleDiscover = async () => {
-    if (!selectedRepoId) {
-      toast.error("Please select a repository");
-      return;
+    if (project_id) {
+      void runDiscovery(project_id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project_id]);
+
+  const runDiscovery = async (id: string) => {
     setLoading(true);
     try {
-      const result = await apiDiscoveryService.discoverAPIs(selectedRepoId);
+      const result = await apiDiscoveryService.discoverAPIs(id);
       setApis(result);
       toast.success(`Discovered ${result.length} endpoints`);
     } catch (error) {
@@ -49,6 +37,14 @@ function APIDiscoveryContent() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDiscover = async () => {
+    if (!project_id) {
+      toast.error("Please select a project first");
+      return;
+    }
+    await runDiscovery(project_id);
   };
 
   const methods = apis.reduce(
@@ -71,47 +67,30 @@ function APIDiscoveryContent() {
               Automatically discover and explore API endpoints.
             </p>
           </div>
-          {repos.length > 0 && (
-            <div className="flex gap-2">
-              <Select
-                value={selectedRepoId || ""}
-                onValueChange={setSelectedRepoId}
-              >
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Select repo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {repos.map((repo) => (
-                    <SelectItem key={repo.id} value={repo.id}>
-                      {repo.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                onClick={handleDiscover}
-                disabled={loading || !selectedRepoId}
-                variant="gradient"
-              >
-                {loading ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                Discover
-              </Button>
-            </div>
-          )}
+          {project_id ? (
+            <Button
+              onClick={handleDiscover}
+              disabled={loading}
+              variant="gradient"
+            >
+              {loading ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              {apis.length > 0 ? "Re-discover" : "Discover"}
+            </Button>
+          ) : null}
         </div>
 
-        {repos.length === 0 ? (
+        {!project_id ? (
           <EmptyState
             icon={Code2}
-            title="No repositories available"
-            description="Connect a GitHub repository to discover its APIs."
-            action={{ label: "Add Repository", href: "/github" }}
+            title="No project selected"
+            description="Pick or create a project from the sidebar to discover its API endpoints."
+            action={{ label: "Open dashboard", href: "/dashboard" }}
           />
-        ) : loading ? (
+        ) : loading && apis.length === 0 ? (
           <LoadingState
             title="Discovering APIs..."
             description="Analyzing the codebase for endpoints"
@@ -141,19 +120,11 @@ function APIDiscoveryContent() {
           <EmptyState
             icon={Code2}
             title="Ready to discover APIs"
-            description="Select a repository and click 'Discover' to find all API endpoints."
+            description="Click 'Discover' to scan the active project's source files for API endpoints."
             action={{ label: "Discover APIs", onClick: handleDiscover }}
           />
         )}
       </div>
     </AppLayout>
-  );
-}
-
-export default function APIDiscoveryPage() {
-  return (
-    <Suspense fallback={<LoadingState title="Loading..." />}>
-      <APIDiscoveryContent />
-    </Suspense>
   );
 }

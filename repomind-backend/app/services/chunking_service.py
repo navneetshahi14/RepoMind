@@ -1,15 +1,37 @@
-from langchain_text_splitters import (
-    RecursiveCharacterTextSplitter
-)
+from pathlib import Path
 
-splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,
-    chunk_overlap=200
-)
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+code_splitter = RecursiveCharacterTextSplitter( chunk_size=1200, chunk_overlap=200, separators=[ "\nclass ", "\ndef ", "\nasync def ", "\ninterface ", "\ntype ", "\n\n", "\n", " ", "" ] )
 
-def chunk_text(text: str):
+pdf_splitter = RecursiveCharacterTextSplitter( chunk_size=1000, chunk_overlap=200 )
 
-    chunks = splitter.split_text(text)
+def read_file(
+    file_path:str
+) -> str:
+    try:
+        with open(
+            file_path,
+            "r",
+            encoding="utf-8"
+        ) as f:
+            return f.read()
+        
+    except Exception:
+        return ""
+    
+    
+def split_into_chunks(
+    text:str,
+):
+    splitting = pdf_splitter.split_text(
+        text
+    )
+    print("count Token",count_token(text))
+    
+    return splitting
 
-    return chunks
+def count_token(text:str):
+    return len(
+        text.split()
+    )

@@ -1,9 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FileText, Sparkles, Download, Copy, Settings } from "lucide-react";
+import { FileText, Sparkles, Copy, Settings } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,17 +20,14 @@ import { MarkdownViewer } from "@/components/markdown/MarkdownViewer";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { LoadingState } from "@/components/dashboard/LoadingState";
 import { readmeService } from "@/services/readmeService";
-import { useSourceStore } from "@/store/sourceStore";
+import { useProjectStore } from "@/store/projectStore";
 import { toast } from "sonner";
 import type { ReadmeConfig, GeneratedReadme } from "@/types";
-import { GitBranch } from "lucide-react";
 import { copyToClipboard } from "@/lib/utils";
 
-function ReadmeContent() {
-  const searchParams = useSearchParams();
-  const repoId = searchParams.get("repoId");
-  const repos = useSourceStore((state) => state.repos);
-
+export default function ReadmePage() {
+  const project_id = useProjectStore((s) => s.currentproject_id);
+  const projects = useProjectStore((s) => s.projects);
   const [config, setConfig] = useState<Partial<ReadmeConfig>>({
     projectName: "",
     description: "",
@@ -44,26 +40,27 @@ function ReadmeContent() {
   });
   const [generated, setGenerated] = useState<GeneratedReadme | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selectedRepoId, setSelectedRepoId] = useState<string | null>(repoId);
 
+  // Default the project name to the active project's name so the
+  // README prompt isn't empty.
   useEffect(() => {
-    if (repoId) {
-      const repo = repos.find((r) => r.id === repoId);
-      if (repo) {
-        setConfig((prev) => ({ ...prev, projectName: repo.name }));
-        setSelectedRepoId(repoId);
-      }
+    if (!project_id) return;
+    const project = projects.find((p) => p.id === project_id);
+    if (project) {
+      setConfig((prev) =>
+        prev.projectName ? prev : { ...prev, projectName: project.name },
+      );
     }
-  }, [repoId, repos]);
+  }, [project_id, projects]);
 
   const handleGenerate = async () => {
-    if (!selectedRepoId) {
-      toast.error("Please select a repository first");
+    if (!project_id) {
+      toast.error("Please select a project first");
       return;
     }
     setLoading(true);
     try {
-      const result = await readmeService.generateReadme(selectedRepoId, config);
+      const result = await readmeService.generateReadme(project_id, config);
       setGenerated(result);
       toast.success("README generated!");
     } catch (error) {
@@ -81,16 +78,16 @@ function ReadmeContent() {
             README Generator
           </h1>
           <p className="text-muted-foreground mt-1">
-            Generate comprehensive README files for any repository.
+            Generate comprehensive README files for the active project.
           </p>
         </div>
 
-        {repos.length === 0 ? (
+        {!project_id ? (
           <EmptyState
             icon={FileText}
-            title="No repositories available"
-            description="Connect a GitHub repository first to generate a README."
-            action={{ label: "Add Repository", href: "/github" }}
+            title="No project selected"
+            description="Pick or create a project from the sidebar to generate a README."
+            action={{ label: "Open dashboard", href: "/dashboard" }}
           />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -102,25 +99,6 @@ function ReadmeContent() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Repository</Label>
-                  <Select
-                    value={selectedRepoId || ""}
-                    onValueChange={setSelectedRepoId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a repository" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {repos.map((repo) => (
-                        <SelectItem key={repo.id} value={repo.id}>
-                          {repo.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <div className="space-y-2">
                   <Label>Project Name</Label>
                   <Input
@@ -184,7 +162,7 @@ function ReadmeContent() {
 
                 <Button
                   onClick={handleGenerate}
-                  disabled={loading || !selectedRepoId}
+                  disabled={loading}
                   variant="gradient"
                   className="w-full"
                 >
@@ -218,7 +196,34 @@ function ReadmeContent() {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
+                  className="space-y-3"
                 >
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        copyToClipboard(generated.content);
+                        toast.success("README copied to clipboard");
+                      }}
+                    >
+                      <Copy className="h-3 w-3 mr-1" />
+                      Copy
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        readmeService.downloadReadme(
+                          generated.content,
+                          "README.md",
+                        )
+                      }
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      Download
+                    </Button>
+                  </div>
                   <MarkdownViewer
                     content={generated.content}
                     filename="README.md"
@@ -228,7 +233,7 @@ function ReadmeContent() {
                 <EmptyState
                   icon={FileText}
                   title="No README generated yet"
-                  description="Configure the options and click 'Generate README' to create one."
+                  description="Configure the options and click 'Generate README' to create one for the active project."
                 />
               )}
             </div>
@@ -236,13 +241,5 @@ function ReadmeContent() {
         )}
       </div>
     </AppLayout>
-  );
-}
-
-export default function ReadmePage() {
-  return (
-    <Suspense fallback={<LoadingState title="Loading..." />}>
-      <ReadmeContent />
-    </Suspense>
   );
 }

@@ -23,8 +23,11 @@ import {
 import { formatRelativeTime, truncateText } from "@/lib/utils";
 import type { Source, SourceType } from "@/types";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSourceStore } from "@/store/sourceStore";
 import { useChatStore } from "@/store/chatStore";
+import { uploadService } from "@/services/uploadService";
+import { githubService } from "@/services/githubService";
 import { toast } from "sonner";
 
 interface SourceCardProps {
@@ -50,6 +53,7 @@ export function SourceCard({ source, onDelete }: SourceCardProps) {
   const Icon = iconMap[source.type];
   const removeSource = useSourceStore((state) => state.removeSource);
   const setActiveSource = useChatStore((state) => state.setActiveSource);
+  const router = useRouter();
 
   const handleChat = () => {
     setActiveSource({
@@ -58,12 +62,22 @@ export function SourceCard({ source, onDelete }: SourceCardProps) {
       type: source.type,
     });
     toast.success(`Now chatting with ${source.name}`);
+    router.push("/chat");
   };
 
-  const handleDelete = () => {
-    removeSource(source.id);
-    onDelete?.(source.id);
-    toast.success(`${source.name} removed`);
+  const handleDelete = async () => {
+    try {
+      if (source.type === "github") {
+        await githubService.deleteRepo(source.id);
+      } else {
+        await uploadService.deleteSource(source.id);
+      }
+      removeSource(source.id);
+      onDelete?.(source.id);
+      toast.success(`${source.name} removed`);
+    } catch (error) {
+      toast.error(`Failed to delete ${source.name}`);
+    }
   };
 
   return (

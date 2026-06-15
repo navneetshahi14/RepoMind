@@ -1,0 +1,1 @@
+from app.prompt.architecture_prompt import ARCHITECTURE_PROMPT

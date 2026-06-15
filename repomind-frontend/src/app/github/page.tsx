@@ -25,10 +25,10 @@ import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { githubService } from "@/services/githubService";
 import { useSourceStore } from "@/store/sourceStore";
+import { useProjectStore } from "@/store/projectStore";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useEffect } from "react";
-import { extractRepoName } from "@/lib/utils";
 
 export default function GitHubPage() {
   const [open, setOpen] = useState(false);
@@ -37,16 +37,17 @@ export default function GitHubPage() {
   const [search, setSearch] = useState("");
   const repos = useSourceStore((state) => state.repos);
   const setRepos = useSourceStore((state) => state.setRepos);
-  const addRepo = useSourceStore((state) => state.addRepo);
+  const project_id = useProjectStore((s) => s.currentproject_id);
   const router = useRouter();
 
   useEffect(() => {
-    loadRepos();
-  }, []);
+    if (project_id) loadRepos();
+  }, [project_id]);
 
   const loadRepos = async () => {
+    if (!project_id) return;
     try {
-      const data = await githubService.getRepos();
+      const data = await githubService.getRepos(project_id);
       setRepos(data);
     } catch (error) {
       console.error(error);
@@ -58,19 +59,27 @@ export default function GitHubPage() {
       toast.error("Please enter a GitHub URL");
       return;
     }
+    if (!project_id) {
+      toast.error("No project selected");
+      return;
+    }
 
     setCloning(true);
     try {
-      const result = await githubService.uploadRepo(url);
-      addRepo({
-        id: result.repo_id,
-        name: extractRepoName(url),
-        url: url,
-        files: result.files,
-        chunks: result.chunks,
-        status: "ready",
-        createdAt: new Date().toISOString(),
-      });
+      // The new backend is synchronous: it clones + indexes + embeds
+      // before returning. The Source row's status reflects the outcome.
+      const result = await githubService.uploadRepo(url, project_id);
+
+      if (result.status === "FAILED") {
+        toast.error(
+          "Indexing failed. Check the repository URL or try again.",
+        );
+        return;
+      }
+
+      // Refetch the full list so the new repo shows up with the
+      // correct fileName / metadata.
+      await loadRepos();
       toast.success("Repository indexed!");
       setUrl("");
       setOpen(false);
