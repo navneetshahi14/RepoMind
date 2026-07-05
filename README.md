@@ -46,7 +46,7 @@ RepoMind is a full-stack application that ingests code from GitHub repositories 
 <h2>📂 Source Upload</h2>
 
 <p align="center">
-  <img src="assest/githubUpload.png" width="48%">
+  <img src="assest/GithubUpload.png" width="48%">
   <img src="assest/uploadPdf.png" width="48%">
 </p>
 
