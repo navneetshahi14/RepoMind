@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from fastapi.responses import StreamingResponse
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -9,6 +10,13 @@ from app.schema.chat_session_schema import (
     ChatSessionCreate,
     ChatSessionResponse
 )
+
+from app.schema.chat_schema import ChatRequest
+from app.services.chat_service import (
+    chat_with_repository,
+    stream_chat_with_repository,
+)
+
 from app.services.chat_session_service import (
     create_chat_session_service,
     delete_chat_session_service,
@@ -20,6 +28,36 @@ router = APIRouter(
     prefix="/chat",
     tags=["Chat Sessions"]
 )
+
+@router.post("/")
+def chat(
+    payload: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return chat_with_repository(
+        db,
+        payload.session_id,
+        payload.question,
+        current_user.id,
+        payload.model,
+    )
+
+
+@router.post("/stream")
+def stream_chat(
+    payload: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    generator = stream_chat_with_repository(
+        db,
+        payload.session_id,
+        payload.question,
+        current_user.id,
+        payload.model,
+    )
+    return StreamingResponse(generator, media_type="text/event-stream")
 
 
 @router.post(

@@ -22,15 +22,59 @@ RepoMind is a full-stack application that ingests code from GitHub repositories 
 
 ---
 
+## 📸 Screenshots
+
+### Landing Page
+
+<p align="center">
+  <img src="assest/landing.png" width="100%">
+</p>
+
+<h2>🔐 Authentication</h2>
+
+<p align="center">
+  <img src="assest/signin.png" width="48%">
+  <img src="assest/signup.png" width="48%">
+</p>
+
+<h2>📊 Dashboard</h2>
+
+<p align="center">
+  <img src="assest/dashboard.png" width="100%">
+</p>
+
+<h2>📂 Source Upload</h2>
+
+<p align="center">
+  <img src="assest/githubUpload.png" width="48%">
+  <img src="assest/uploadPdf.png" width="48%">
+</p>
+
+<h2>💬 Chat Interface</h2>
+
+<p align="center">
+  <img src="assest/chatpage.png" width="100%">
+</p>
+
+<h2>🧠 Repository Analysis</h2>
+
+<p align="center">
+  <img src="assest/chatSection.png" width="100%">
+</p>
+
+---
+
 ## Features
 
 ### Core
+
 - **Multi-source ingestion** — Connect a GitHub repository (cloned, parsed, chunked, embedded) or upload a PDF document.
 - **RAG-powered chat** — Ask questions in natural language and receive streamed answers grounded in the ingested source, with file/path citations.
 - **Persistent chat sessions** — Multiple sessions per project, full message history, per-message citations.
 - **Semantic search** — Vector similarity search (Qdrant) over chunked content; results are joined back to Postgres for source attribution.
 
 ### Repository Analysis
+
 - **Repository summary** — One-shot prose overview of the entire project.
 - **Tech-stack detection** — Identifies the languages, frameworks, and tooling used.
 - **Architecture summary** — High-level architectural narrative for the project.
@@ -39,6 +83,7 @@ RepoMind is a full-stack application that ingests code from GitHub repositories 
 - **README generator** — Produces a complete `README.md` draft for the project.
 
 ### Frontend / UX
+
 - **Project-based scoping** — Each user has Projects, each Project contains Sources (GitHub repos or PDFs) and Chat Sessions.
 - **Streaming chat UI** — Token-by-token rendering with citation cards, code highlighting, Markdown + Mermaid rendering.
 - **Dashboard** — Stats, recent sources, project overview.
@@ -46,6 +91,7 @@ RepoMind is a full-stack application that ingests code from GitHub repositories 
 - **Responsive** — Built with Radix UI primitives and Tailwind CSS.
 
 ### Auth & Security
+
 - **JWT-based authentication** — `HS256` tokens, 24-hour expiry, bearer-token middleware.
 - **Bcrypt password hashing** — Via `passlib`.
 - **Per-user isolation** — All resources (Projects, Sources, Sessions, Messages) are scoped to the authenticated user.
@@ -55,47 +101,51 @@ RepoMind is a full-stack application that ingests code from GitHub repositories 
 ## Tech Stack
 
 ### Frontend
-| Category | Technology |
-|---|---|
-| Framework | Next.js 15 (App Router) |
-| Language | TypeScript 5 |
-| UI Library | React 19 RC |
-| Styling | Tailwind CSS 3 + `tailwindcss-animate` |
-| Components | Radix UI primitives, `class-variance-authority`, `lucide-react` icons |
-| State Management | Zustand (with `persist` middleware), TanStack React Query |
-| Forms | React Hook Form + Zod |
-| Markdown / Code | `react-markdown`, `remark-gfm`, `react-syntax-highlighter`, `mermaid` |
-| Animations | Framer Motion |
-| Toasts | Sonner |
-| HTTP Client | Axios |
-| File Uploads | `react-dropzone` |
+
+| Category         | Technology                                                            |
+| ---------------- | --------------------------------------------------------------------- |
+| Framework        | Next.js 15 (App Router)                                               |
+| Language         | TypeScript 5                                                          |
+| UI Library       | React 19 RC                                                           |
+| Styling          | Tailwind CSS 3 + `tailwindcss-animate`                                |
+| Components       | Radix UI primitives, `class-variance-authority`, `lucide-react` icons |
+| State Management | Zustand (with `persist` middleware), TanStack React Query             |
+| Forms            | React Hook Form + Zod                                                 |
+| Markdown / Code  | `react-markdown`, `remark-gfm`, `react-syntax-highlighter`, `mermaid` |
+| Animations       | Framer Motion                                                         |
+| Toasts           | Sonner                                                                |
+| HTTP Client      | Axios                                                                 |
+| File Uploads     | `react-dropzone`                                                      |
 
 ### Backend
-| Category | Technology |
-|---|---|
-| Framework | FastAPI (Python 3.13) |
-| ASGI Server | Uvicorn |
-| ORM | SQLAlchemy 2.0 (Declarative + `Mapped[...]`) |
-| Migrations | Alembic |
-| Auth | `python-jose` (JWT), `passlib[bcrypt]` |
-| Validation | Pydantic + `pydantic-settings` |
+
+| Category         | Technology                                                                                            |
+| ---------------- | ----------------------------------------------------------------------------------------------------- |
+| Framework        | FastAPI (Python 3.13)                                                                                 |
+| ASGI Server      | Uvicorn                                                                                               |
+| ORM              | SQLAlchemy 2.0 (Declarative + `Mapped[...]`)                                                          |
+| Migrations       | Alembic                                                                                               |
+| Auth             | `python-jose` (JWT), `passlib[bcrypt]`                                                                |
+| Validation       | Pydantic + `pydantic-settings`                                                                        |
 | AI Orchestration | LangChain + `langchain-community` + `langchain-openai` + `langchain-ollama` + `langchain-huggingface` |
-| LLM Providers | OpenAI (`gpt-4o-mini`), Ollama (`llama3`), Google Gemini (`gemini-2.5-flash`) |
-| Embeddings | OpenAI `text-embedding-3-small`, Ollama `nomic-embed-text`, HuggingFace `sentence-transformers` |
-| Vector Database | Qdrant (local or Qdrant Cloud) |
-| PDF Processing | `PyMuPDF` (`fitz`), `pypdf`, `pdfplumber` |
-| GitHub Ingestion | `GitPython`, `PyGithub` |
-| Streaming | `sse-starlette` |
-| Async Files | `aiofiles` |
-| Token Counting | `tiktoken` |
+| LLM Providers    | OpenAI (`gpt-4o-mini`), Ollama (`llama3`), Google Gemini (`gemini-2.5-flash`)                         |
+| Embeddings       | OpenAI `text-embedding-3-small`, Ollama `nomic-embed-text`, HuggingFace `sentence-transformers`       |
+| Vector Database  | Qdrant (local or Qdrant Cloud)                                                                        |
+| PDF Processing   | `PyMuPDF` (`fitz`), `pypdf`, `pdfplumber`                                                             |
+| GitHub Ingestion | `GitPython`, `PyGithub`                                                                               |
+| Streaming        | `sse-starlette`                                                                                       |
+| Async Files      | `aiofiles`                                                                                            |
+| Token Counting   | `tiktoken`                                                                                            |
 
 ### Database
-| Component | Technology |
-|---|---|
+
+| Component        | Technology                         |
+| ---------------- | ---------------------------------- |
 | Primary Database | PostgreSQL (via `psycopg2-binary`) |
-| Vector Store | Qdrant |
+| Vector Store     | Qdrant                             |
 
 ### Other Tools
+
 - **dotenv** — `.env` loading
 - **httpx** / **requests** — Outbound HTTP
 - **numpy**, **pandas** — Data utilities
@@ -308,13 +358,16 @@ alembic upgrade head
 ### 5. Qdrant setup
 
 **Option A — Qdrant Cloud (recommended for getting started):**
+
 - Create a free cluster at [cloud.qdrant.io](https://cloud.qdrant.io/)
 - Copy the cluster URL and API key into your `.env`
 
 **Option B — Local Docker:**
+
 ```bash
 docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
 ```
+
 Then set `QDRANT_URL=http://localhost:6333` in `.env`.
 
 ### 6. (Optional) Ollama setup
@@ -366,58 +419,66 @@ The app will be available at `http://localhost:3000`.
 All routes are mounted in `repomind-backend/main.py`.
 
 ### Auth
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/auth/register` | Register a new user, returns JWT |
-| `POST` | `/auth/login` | Login, returns JWT |
-| `GET` | `/auth/me` | Current authenticated user (Bearer required) |
+
+| Method | Path             | Description                                  |
+| ------ | ---------------- | -------------------------------------------- |
+| `POST` | `/auth/register` | Register a new user, returns JWT             |
+| `POST` | `/auth/login`    | Login, returns JWT                           |
+| `GET`  | `/auth/me`       | Current authenticated user (Bearer required) |
 
 ### Projects
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/project/` | Create a new project |
-| `GET` | `/project/` | List current user's projects |
-| `GET` | `/project/{project_id}` | Get a specific project |
-| `DELETE` | `/project/{project_id}` | Delete a project |
+
+| Method   | Path                    | Description                  |
+| -------- | ----------------------- | ---------------------------- |
+| `POST`   | `/project/`             | Create a new project         |
+| `GET`    | `/project/`             | List current user's projects |
+| `GET`    | `/project/{project_id}` | Get a specific project       |
+| `DELETE` | `/project/{project_id}` | Delete a project             |
 
 ### Sources
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/sources/` | Create a source record |
-| `GET` | `/sources/project/{project_id}` | List sources for a project |
-| `POST` | `/sources/upload/pdf` | Upload and ingest a PDF (`?project_id=...`) |
+
+| Method | Path                            | Description                                 |
+| ------ | ------------------------------- | ------------------------------------------- |
+| `POST` | `/sources/`                     | Create a source record                      |
+| `GET`  | `/sources/project/{project_id}` | List sources for a project                  |
+| `POST` | `/sources/upload/pdf`           | Upload and ingest a PDF (`?project_id=...`) |
 
 ### Chat Sessions
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/chat/sessions` | Create a chat session in a project |
-| `GET` | `/chat/sessions/{project_id}` | List sessions for a project |
+
+| Method | Path                          | Description                        |
+| ------ | ----------------------------- | ---------------------------------- |
+| `POST` | `/chat/sessions`              | Create a chat session in a project |
+| `GET`  | `/chat/sessions/{project_id}` | List sessions for a project        |
 
 ### Messages
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/messages/` | Persist a message |
-| `GET` | `/messages/{session_id}` | Get message history for a session |
+
+| Method | Path                     | Description                       |
+| ------ | ------------------------ | --------------------------------- |
+| `POST` | `/messages/`             | Persist a message                 |
+| `GET`  | `/messages/{session_id}` | Get message history for a session |
 
 ### Chat
-| Method | Path | Description |
-|---|---|---|
+
+| Method | Path           | Description                         |
+| ------ | -------------- | ----------------------------------- |
 | `POST` | `/chat/stream` | Streaming RAG answer (token deltas) |
 
 ### Repository Analyzers
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/repo/summary` | Repository summary |
-| `GET` | `/repo/tech-stack` | Tech-stack detection |
-| `GET` | `/repo/generate-readme` | README generator |
-| `POST` | `/repo/{project_id}/explain-file` | Explain a file (`{file_path}`) |
-| `POST` | `/repo/{project_id}/explain-folder` | Explain a folder (`{folder_path}`) |
-| `POST` | `/repo/{project_id}/architecture-summary` | Architecture summary |
+
+| Method | Path                                      | Description                        |
+| ------ | ----------------------------------------- | ---------------------------------- |
+| `POST` | `/repo/summary`                           | Repository summary                 |
+| `GET`  | `/repo/tech-stack`                        | Tech-stack detection               |
+| `GET`  | `/repo/generate-readme`                   | README generator                   |
+| `POST` | `/repo/{project_id}/explain-file`         | Explain a file (`{file_path}`)     |
+| `POST` | `/repo/{project_id}/explain-folder`       | Explain a folder (`{folder_path}`) |
+| `POST` | `/repo/{project_id}/architecture-summary` | Architecture summary               |
 
 ### Health
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/` | Banner / health check |
+
+| Method | Path | Description           |
+| ------ | ---- | --------------------- |
+| `GET`  | `/`  | Banner / health check |
 
 ---
 
@@ -492,16 +553,16 @@ Each model has a `TimestampMixin` (`created_at`, `updated_at`) and a `UUIDMixin`
 
 > Placeholder: drop screenshots of the landing page, dashboard, chat, and analyzer pages here.
 
-| Landing | Dashboard |
-|---|---|
+| Landing                                  | Dashboard                                    |
+| ---------------------------------------- | -------------------------------------------- |
 | ![Landing](docs/screenshots/landing.png) | ![Dashboard](docs/screenshots/dashboard.png) |
 
-| Chat (with citations) | Architecture |
-|---|---|
+| Chat (with citations)              | Architecture                                       |
+| ---------------------------------- | -------------------------------------------------- |
 | ![Chat](docs/screenshots/chat.png) | ![Architecture](docs/screenshots/architecture.png) |
 
-| PDF Upload | GitHub Ingest |
-|---|---|
+| PDF Upload                             | GitHub Ingest                          |
+| -------------------------------------- | -------------------------------------- |
 | ![Upload](docs/screenshots/upload.png) | ![GitHub](docs/screenshots/github.png) |
 
 ---
@@ -510,36 +571,36 @@ Each model has a `TimestampMixin` (`created_at`, `updated_at`) and a `UUIDMixin`
 
 ### Backend — `repomind-backend/.env`
 
-| Variable | Required | Description |
-|---|---|---|
-| `SECRET_KEY` | ✅ | JWT signing secret (use a strong random value in production) |
-| `DATABASE_URL` | ✅ | PostgreSQL connection string, e.g. `postgresql://user:pass@localhost:5432/repomind` |
-| `QDRANT_URL` | ✅ | Qdrant endpoint, e.g. `http://localhost:6333` or a Qdrant Cloud URL |
-| `QDRANT_API_KEY` | ⚠️ if Qdrant Cloud | Qdrant API key |
-| `LLM_PROVIDER` | ❌ | `ollama` (default), `openai`, or `gemini` |
-| `OPENAI_API_KEY` | ⚠️ if using OpenAI | OpenAI API key |
-| `OPENAI_MODEL` | ❌ | Default `gpt-4o-mini` |
-| `GOOGLE_API_KEY` | ⚠️ if using Gemini | Google AI Studio API key |
-| `GEMINI_MODEL` | ❌ | Default `gemini-2.5-flash` |
-| `OLLAMA_HOST` | ❌ | Default `http://localhost:11434` |
-| `OLLAMA_MODEL` | ❌ | Default `llama3` |
-| `OLLAMA_TIMEOUT` | ❌ | Default `120` (seconds) |
-| `EMBEDDING_PROVIDER` | ❌ | `ollama` (default), `openai`, or `huggingface` |
-| `OLLAMA_EMBEDDING_MODEL` | ❌ | Default `nomic-embed-text` |
-| `OPENAI_EMBEDDING_MODEL` | ❌ | Default `text-embedding-3-small` |
-| `HUGGINGFACE_EMBEDDING_MODEL` | ❌ | e.g. `sentence-transformers/all-MiniLM-L6-v2` |
-| `STRIPE_SECRET_KEY` | ❌ | Reserved for future billing integration |
-| `STRIPE_WEBHOOK_SECRET` | ❌ | Reserved for future billing integration |
-| `PRO_PRICE_ID` | ❌ | Reserved for future billing integration |
+| Variable                      | Required           | Description                                                                         |
+| ----------------------------- | ------------------ | ----------------------------------------------------------------------------------- |
+| `SECRET_KEY`                  | ✅                 | JWT signing secret (use a strong random value in production)                        |
+| `DATABASE_URL`                | ✅                 | PostgreSQL connection string, e.g. `postgresql://user:pass@localhost:5432/repomind` |
+| `QDRANT_URL`                  | ✅                 | Qdrant endpoint, e.g. `http://localhost:6333` or a Qdrant Cloud URL                 |
+| `QDRANT_API_KEY`              | ⚠️ if Qdrant Cloud | Qdrant API key                                                                      |
+| `LLM_PROVIDER`                | ❌                 | `ollama` (default), `openai`, or `gemini`                                           |
+| `OPENAI_API_KEY`              | ⚠️ if using OpenAI | OpenAI API key                                                                      |
+| `OPENAI_MODEL`                | ❌                 | Default `gpt-4o-mini`                                                               |
+| `GOOGLE_API_KEY`              | ⚠️ if using Gemini | Google AI Studio API key                                                            |
+| `GEMINI_MODEL`                | ❌                 | Default `gemini-2.5-flash`                                                          |
+| `OLLAMA_HOST`                 | ❌                 | Default `http://localhost:11434`                                                    |
+| `OLLAMA_MODEL`                | ❌                 | Default `llama3`                                                                    |
+| `OLLAMA_TIMEOUT`              | ❌                 | Default `120` (seconds)                                                             |
+| `EMBEDDING_PROVIDER`          | ❌                 | `ollama` (default), `openai`, or `huggingface`                                      |
+| `OLLAMA_EMBEDDING_MODEL`      | ❌                 | Default `nomic-embed-text`                                                          |
+| `OPENAI_EMBEDDING_MODEL`      | ❌                 | Default `text-embedding-3-small`                                                    |
+| `HUGGINGFACE_EMBEDDING_MODEL` | ❌                 | e.g. `sentence-transformers/all-MiniLM-L6-v2`                                       |
+| `STRIPE_SECRET_KEY`           | ❌                 | Reserved for future billing integration                                             |
+| `STRIPE_WEBHOOK_SECRET`       | ❌                 | Reserved for future billing integration                                             |
+| `PRO_PRICE_ID`                | ❌                 | Reserved for future billing integration                                             |
 
 ### Frontend — `repomind-frontend/.env.local`
 
-| Variable | Required | Description |
-|---|---|---|
-| `NEXT_PUBLIC_API_URL` | ✅ | Backend URL, e.g. `http://localhost:8000` |
-| `NEXT_PUBLIC_APP_NAME` | ❌ | Display name, default `RepoMind` |
-| `NEXT_PUBLIC_APP_DESCRIPTION` | ❌ | Marketing copy, default `AI-Powered Multi-Source RAG Platform` |
-| `NEXT_PUBLIC_WS_URL` | ❌ | WebSocket URL (reserved) |
+| Variable                      | Required | Description                                                    |
+| ----------------------------- | -------- | -------------------------------------------------------------- |
+| `NEXT_PUBLIC_API_URL`         | ✅       | Backend URL, e.g. `http://localhost:8000`                      |
+| `NEXT_PUBLIC_APP_NAME`        | ❌       | Display name, default `RepoMind`                               |
+| `NEXT_PUBLIC_APP_DESCRIPTION` | ❌       | Marketing copy, default `AI-Powered Multi-Source RAG Platform` |
+| `NEXT_PUBLIC_WS_URL`          | ❌       | WebSocket URL (reserved)                                       |
 
 ---
 
@@ -571,6 +632,7 @@ Contributions are welcome. To get started:
 7. **Open a pull request** with a clear description of the change.
 
 ### Code style
+
 - **Backend**: PEP 8, type hints, modular services. Each `routes/` file should stay thin; put logic in `services/`.
 - **Frontend**: ESLint (Next.js config), strict TypeScript. Keep state in Zustand stores, server state in TanStack Query.
 

@@ -23,7 +23,6 @@ from app.routes.auth_route import router as auth_router
 from app.routes.project_route import router as project_router
 from app.routes.source_route import router as source_router
 from app.routes.chat_session_route import router as chat_session_router
-from app.routes.chat_route import router as chat_router
 from app.routes.message_route import router as message_router
 from app.routes.repository_route import router as repository_router
 
@@ -58,7 +57,6 @@ app.include_router(auth_router)
 app.include_router(project_router)
 app.include_router(source_router)
 app.include_router(chat_session_router)
-app.include_router(chat_router)
 app.include_router(message_router)
 app.include_router(repository_router)
 
